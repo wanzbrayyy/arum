@@ -1,0 +1,63 @@
+const mongoose = require('mongoose');
+
+const OrderSchema = new mongoose.Schema({
+  cashier: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  customerName: {
+    type: String,
+    default: 'Guest'
+  },
+  tableNumber: {
+    type: String,
+    default: 'Takeaway'
+  },
+  items: [
+    {
+      product: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product',
+        required: true
+      },
+      productName: String,
+      quantity: {
+        type: Number,
+        required: true
+      },
+      priceAtOrder: {
+        type: Number,
+        required: true
+      },
+      notes: {
+        type: String,
+        default: ''
+      }
+    }
+  ],
+  totalAmount: {
+    type: Number,
+    required: true
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['Cash', 'QRIS', 'Pending'],
+    default: 'Cash'
+  },
+  status: {
+    type: String,
+    enum: ['Pending', 'Completed', 'Cancelled', 'Held'],
+    default: 'Pending'
+  },
+  shift: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Shift'
+  },
+  orderDate: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+module.exports = mongoose.model('Order', OrderSchema);

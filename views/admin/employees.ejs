@@ -1,0 +1,62 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-title">WARKOP ARUM DALU</div>
+            <div class="logo-subtitle">ADMIN PANEL</div>
+        </div>
+        <nav class="sidebar-menu">
+            <ul>
+                <li><a href="/admin/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="/admin/products"><i class="fas fa-boxes"></i> Products</a></li>
+                <li><a href="/admin/categories"><i class="fas fa-tags"></i> Categories</a></li>
+                <li><a href="/admin/employees" class="active"><i class="fas fa-users"></i> Employees</a></li>
+                <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="dashboard-header">
+            <h2>Employee Management</h2>
+            <div class="user-info">
+                <span>Welcome, <%= user.username %> (<%= user.role %>)</span>
+                <i class="fas fa-user-circle"></i>
+            </div>
+        </div>
+
+        <h3>Existing Employees</h3>
+        <table class="order-table">
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Employees will be listed here from database -->
+                <tr>
+                    <td>adminuser</td>
+                    <td>admin</td>
+                    <td>
+                        <button class="btn" style="background-color: #3498db; width: auto; padding: 8px 15px; margin-right: 5px;">Edit</button>
+                        <button class="btn" style="background-color: #e74c3c; width: auto; padding: 8px 15px;">Delete</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>cashier1</td>
+                    <td>cashier</td>
+                    <td>
+                        <button class="btn" style="background-color: #3498db; width: auto; padding: 8px 15px; margin-right: 5px;">Edit</button>
+                        <button class="btn" style="background-color: #e74c3c; width: auto; padding: 8px 15px;">Delete</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

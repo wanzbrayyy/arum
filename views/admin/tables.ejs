@@ -1,0 +1,125 @@
+<%- include('../partials/header') %>
+<script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+
+<div class="container">
+    <div class="dashboard-header">
+        <h2>Visual Table Management</h2>
+        <div>
+            <form action="/admin/store/toggle" method="POST" style="display:inline;">
+                <button class="btn" style="background:<%= config.isClosed ? 'red' : 'green' %>; width:auto;">
+                    <%= config.isClosed ? 'CLOSED (Open Now)' : 'OPEN (Close Now)' %>
+                </button>
+            </form>
+            <button class="btn" onclick="addTable()" style="width:auto; background:#3498db;">+ Add Table</button>
+            <button class="btn" onclick="saveLayout()" style="width:auto;">Save Layout</button>
+        </div>
+    </div>
+
+    <div id="floorPlan" style="width:100%; height:600px; background:#222; position:relative; overflow:hidden; border:2px solid #555;">
+        <% tables.forEach(t => { %>
+            <div class="draggable-table" id="<%= t._id %>" 
+                 data-x="<%= t.x %>" data-y="<%= t.y %>" data-name="<%= t.name %>" data-type="<%= t.type %>"
+                 style="transform: translate(<%= t.x %>px, <%= t.y %>px); width:<%= t.width %>px; height:<%= t.height %>px;">
+                <%= t.name %>
+                <div class="delete-handle" onclick="removeTable(this)">x</div>
+            </div>
+        <% }) %>
+    </div>
+</div>
+
+<style>
+    .draggable-table {
+        position: absolute;
+        background: #ecf0f1; color: #2c3e50;
+        border-radius: 8px;
+        display: flex; justify-content: center; align-items: center;
+        font-weight: bold; cursor: move;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        touch-action: none;
+    }
+    .delete-handle {
+        position: absolute; top: -5px; right: -5px;
+        background: red; color: white; border-radius: 50%;
+        width: 20px; height: 20px; font-size: 12px;
+        display: flex; justify-content: center; align-items: center;
+        cursor: pointer;
+    }
+</style>
+
+<script>
+    let tableCount = <%= tables.length %>;
+
+    function addTable() {
+        tableCount++;
+        const el = document.createElement('div');
+        el.className = 'draggable-table';
+        el.textContent = 'Table ' + tableCount;
+        el.dataset.name = 'Table ' + tableCount;
+        el.dataset.type = 'Normal';
+        el.dataset.x = 0; el.dataset.y = 0;
+        el.style.width = '100px'; el.style.height = '100px';
+        el.style.transform = 'translate(0px, 0px)';
+        el.innerHTML += '<div class="delete-handle" onclick="removeTable(this)">x</div>';
+        document.getElementById('floorPlan').appendChild(el);
+    }
+
+    function removeTable(el) {
+        el.parentElement.remove();
+    }
+
+    interact('.draggable-table')
+        .draggable({
+            listeners: {
+                move (event) {
+                    var target = event.target;
+                    var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx;
+                    var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy;
+
+                    target.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+                    target.setAttribute('data-x', x);
+                    target.setAttribute('data-y', y);
+                }
+            }
+        })
+        .resizable({
+            edges: { left: true, right: true, bottom: true, top: true },
+            listeners: {
+                move (event) {
+                    var target = event.target;
+                    var x = (parseFloat(target.getAttribute('data-x')) || 0);
+                    var y = (parseFloat(target.getAttribute('data-y')) || 0);
+
+                    target.style.width = event.rect.width + 'px';
+                    target.style.height = event.rect.height + 'px';
+                    x += event.deltaRect.left;
+                    y += event.deltaRect.top;
+
+                    target.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+                    target.setAttribute('data-x', x);
+                    target.setAttribute('data-y', y);
+                }
+            }
+        });
+
+    async function saveLayout() {
+        const tables = [];
+        document.querySelectorAll('.draggable-table').forEach(el => {
+            tables.push({
+                name: el.innerText.replace('x', '').trim(),
+                x: parseFloat(el.dataset.x),
+                y: parseFloat(el.dataset.y),
+                width: parseFloat(el.style.width),
+                height: parseFloat(el.style.height),
+                type: el.dataset.type
+            });
+        });
+
+        await fetch('/admin/tables/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ tables })
+        });
+        alert('Layout Saved!');
+    }
+</script>
+<%- include('../partials/footer') %>

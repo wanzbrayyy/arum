@@ -1,0 +1,149 @@
+<div id="bluetoothStatusModal" class="modal" style="display: none; z-index: 10000;">
+    <div class="modal-content" style="text-align: center; max-width: 350px; background-color: var(--secondary-dark); border: 1px solid var(--border-color); border-radius: 15px;">
+        <div id="btIconContainer" class="bluetooth-animation">
+            <div class="radar"><div class="scanner"></div></div>
+            <i id="btIcon" class="fas fa-bluetooth-b" style="font-size: 2.5em; color: white; position: relative; z-index: 2;"></i>
+        </div>
+        <h3 id="btStatusText" style="margin: 20px 0 5px 0; color: white;">Mencari Printer...</h3>
+        <p id="btSubText" style="color: #aaa; font-size: 0.9em; margin-bottom: 25px;">Pilih RPP02N / Blue / Printer di popup.</p>
+        <button id="cancelBluetoothBtn" class="btn" style="background-color: #e74c3c; width: 100%;">Batal</button>
+    </div>
+</div>
+
+<style>
+    .bluetooth-animation { position: relative; width: 100px; height: 100px; margin: 0 auto; display: flex; align-items: center; justify-content: center; background: #2c3e50; border-radius: 50%; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+    .radar { position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 2px solid #27ae60; box-sizing: border-box; overflow: hidden; }
+    .scanner { position: absolute; width: 100%; height: 100%; background: conic-gradient(from 0deg, transparent 0%, transparent 80%, #27ae60 100%); border-radius: 50%; animation: scan 1.5s linear infinite; }
+    @keyframes scan { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .success-pulse { background: #27ae60 !important; box-shadow: 0 0 30px #27ae60 !important; transform: scale(1.1); }
+</style>
+
+<script>
+    let printDevice = null;
+    let printCharacteristic = null;
+
+    const btModal = document.getElementById('bluetoothStatusModal');
+    const btStatusText = document.getElementById('btStatusText');
+    document.getElementById('cancelBluetoothBtn').onclick = () => { btModal.style.display = 'none'; };
+
+    window.connectToPrinter = async function() {
+        btModal.style.display = 'flex';
+        btStatusText.textContent = "Memindai...";
+        try {
+            const device = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb'] });
+            btStatusText.textContent = "Menghubungkan...";
+            const server = await device.gatt.connect();
+            const service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+            printCharacteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
+            printDevice = device;
+            device.addEventListener('gattserverdisconnected', () => { printDevice = null; printCharacteristic = null; });
+            btStatusText.textContent = "Terhubung!";
+            setTimeout(() => { btModal.style.display = 'none'; }, 1000);
+            return true;
+        } catch (error) {
+            btModal.style.display = 'none';
+            if (error.name !== 'NotFoundError') alert('Gagal Konek: ' + error.message);
+            return false;
+        }
+    };
+
+    window.printReceipt = async function(data) {
+        if (!printCharacteristic) {
+            const connected = await window.connectToPrinter();
+            if (!connected) return;
+        }
+        try {
+            const chunkSize = 100;
+            for (let i = 0; i < data.length; i += chunkSize) {
+                await printCharacteristic.writeValue(data.slice(i, i + chunkSize));
+                await new Promise(r => setTimeout(r, 50)); 
+            }
+        } catch (e) {
+            alert("Printer Error: " + e.message);
+            printCharacteristic = null;
+        }
+    };
+
+    function imageToBytes(img, width, height) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(img, 0, 0, width, height);
+        const imageData = ctx.getImageData(0, 0, width, height).data;
+        
+        let bytes = [];
+        for (let y = 0; y < height; y++) {
+            for (let x = 0; x < Math.floor(width / 8); x++) {
+                let byte = 0;
+                for (let b = 0; b < 8; b++) {
+                    const i = ((y * width) + (x * 8) + b) * 4;
+                    const avg = (imageData[i] + imageData[i + 1] + imageData[i + 2]) / 3;
+                    if (avg < 128) {
+                        byte |= (1 << (7 - b));
+                    }
+                }
+                bytes.push(byte);
+            }
+        }
+        return bytes;
+    }
+
+    async function generateQrisBytes() {
+        const img = new Image();
+        img.crossOrigin = "Anonymous";
+        img.src = 'https://files.catbox.moe/k0lqa7.jpg';
+        await new Promise(resolve => img.onload = resolve);
+
+        const width = 256, height = 256;
+        const rasterBytes = imageToBytes(img, width, height);
+
+        let commands = [];
+        commands.push(0x1B, 0x61, 0x01); // Center
+        commands.push(0x1D, 0x76, 0x30, 0x00, Math.floor(width / 8) % 256, Math.floor(width / 8) / 256, height % 256, height / 256);
+        commands.push(...rasterBytes);
+        return commands;
+    }
+
+    window.generateReceiptBytes = async function(order) {
+        const encoder = new TextEncoder();
+        let commands = [];
+        const add = (arr) => commands.push(...arr);
+        const text = (str) => add(encoder.encode(str));
+
+        add([0x1B, 0x40, 0x1B, 0x61, 0x01]);
+        add([0x1B, 0x21, 0x08]);
+        text("WARKOP ARUM DALU\n");
+        add([0x1B, 0x21, 0x00]);
+        text("Jl. Benda Dalam Manggis\n\n");
+        add([0x1B, 0x61, 0x00]);
+        text(`Tgl : ${new Date().toLocaleString('id-ID')}\n`);
+        text(`Meja: ${order.tableName || 'Takeaway'}\n`);
+        text(`Cust: ${order.customerName}\n`);
+        text("--------------------------------\n");
+        order.items.forEach(item => { text(`${item.quantity}x ${item.productName}\n`); text(`   Rp ${(item.price * item.quantity).toLocaleString('id-ID')}\n`); });
+        text("--------------------------------\n");
+        add([0x1B, 0x61, 0x02]);
+        add([0x1B, 0x21, 0x08]);
+        text(`TOTAL: Rp ${order.totalAmount.toLocaleString('id-ID')}\n`);
+        add([0x1B, 0x21, 0x00]);
+        text(`Payment: ${order.paymentMethod || 'Cash'}\n`);
+        add([0x1B, 0x61, 0x01]);
+        
+        if (order.paymentMethod === 'QRIS') {
+            text("Silakan Scan QRIS di Bawah\n\n");
+            const qrisBytes = await generateQrisBytes();
+            add(qrisBytes);
+        }
+
+        text("\nTerima Kasih!\n\n\n");
+        return new Uint8Array(commands);
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const path = window.location.pathname;
+        document.querySelectorAll('.sidebar-menu a').forEach(l => { if(l.getAttribute('href') === path) l.classList.add('active'); });
+    });
+</script>
+</body>
+</html>

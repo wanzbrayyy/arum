@@ -1,0 +1,146 @@
+const express = require('express');
+const router = express.Router();
+const Product = require('../models/product');
+const Order = require('../models/order');
+const Shift = require('../models/shift');
+const Table = require('../models/table');
+const StoreConfig = require('../models/storeConfig');
+
+const ensureAuthenticated = (req, res, next) => {
+  if (req.isAuthenticated() && req.user.role === 'cashier') return next();
+  res.redirect('/auth/login');
+};
+
+const getShiftRange = () => {
+    const now = new Date();
+    const hour = now.getHours();
+    let start = new Date(now), end = new Date(now);
+    
+    if (hour >= 7 && hour < 19) {
+        start.setHours(7,0,0,0);
+        end.setHours(19,0,0,0);
+    } else {
+        if (hour < 7) start.setDate(start.getDate() - 1);
+        start.setHours(19,0,0,0);
+        end.setDate(end.getDate() + (hour >= 19 ? 1 : 0));
+        end.setHours(7,0,0,0);
+    }
+    return { start, end };
+};
+
+const checkShift = async (req, res, next) => {
+    const { start } = getShiftRange();
+    const activeShift = await Shift.findOne({ 
+        cashier: req.user._id, 
+        startTime: { $gte: start },
+        status: 'Open'
+    });
+    req.activeShift = activeShift;
+    next();
+};
+
+router.get('/dashboard', ensureAuthenticated, checkShift, async (req, res) => {
+  const config = await StoreConfig.findOne() || {};
+  if(config.isClosed) return res.send("TOKO TUTUP SEMENTARA");
+
+  const products = await Product.find({});
+  const tables = await Table.find({});
+  const heldOrders = await Order.find({ status: 'Held' });
+  
+  res.render('cashier/dashboard', {
+      user: req.user, products, activeShift: req.activeShift, heldOrders, tables
+  });
+});
+
+router.post('/shift/start', ensureAuthenticated, async (req, res) => {
+    const { startCash } = req.body;
+    await new Shift({ cashier: req.user._id, startCash: parseInt(startCash) }).save();
+    res.redirect('/cashier/dashboard');
+});
+
+router.post('/shift/end', ensureAuthenticated, async (req, res) => {
+    const { actualCash } = req.body;
+    const shift = await Shift.findOne({ cashier: req.user._id, status: 'Open' }).sort({startTime: -1});
+    if(shift) {
+        const orders = await Order.find({ shift: shift._id, status: 'Completed' });
+        shift.endTime = Date.now();
+        shift.status = 'Closed';
+        shift.endCash = parseInt(actualCash);
+        shift.expectedCash = shift.startCash + orders.reduce((a,b)=>a+b.totalAmount,0);
+        await shift.save();
+    }
+    res.redirect('/auth/logout');
+});
+
+router.post('/order', ensureAuthenticated, checkShift, async (req, res) => {
+  if (!req.activeShift) return res.status(403).json({ message: 'Shift closed' });
+  const { items, tableId, action, orderId } = req.body;
+  
+  // Queue Number Generation
+  const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+  const queueCount = await Order.countDocuments({ orderDate: { $gte: todayStart } });
+  
+  let orderItems = [];
+  let totalAmount = 0;
+
+  for (const i of items) {
+      const p = await Product.findById(i.productId);
+      if(action === 'pay') {
+          p.stock -= i.quantity;
+          await p.save();
+      }
+      totalAmount += p.price * i.quantity;
+      orderItems.push({
+          product: p._id, productName: p.name, quantity: i.quantity,
+          priceAtOrder: p.price, costAtOrder: p.cost
+      });
+  }
+
+  const table = await Table.findById(tableId);
+  const newOrder = new Order({
+      cashier: req.user._id, items: orderItems, totalAmount,
+      tableId: table ? table._id : null,
+      tableName: table ? table.name : 'Takeaway',
+      queueNumber: queueCount + 1,
+      status: action === 'hold' ? 'Held' : 'Completed',
+      shift: req.activeShift._id
+  });
+
+  await newOrder.save();
+  if(table && action === 'hold') {
+      table.status = 'Occupied';
+      table.currentOrderId = newOrder._id;
+      await table.save();
+  } else if (table && action === 'pay') {
+      table.status = 'Dirty';
+      table.currentOrderId = null;
+      await table.save();
+  }
+
+  if(orderId) await Order.findByIdAndDelete(orderId);
+  res.json({ message: 'Success', order: newOrder });
+});
+
+router.post('/table/status', ensureAuthenticated, async (req, res) => {
+    const { tableId, status } = req.body;
+    await Table.findByIdAndUpdate(tableId, { status });
+    res.sendStatus(200);
+});
+
+router.post('/order/void', ensureAuthenticated, async (req, res) => {
+    const { orderId, reason } = req.body;
+    const order = await Order.findById(orderId);
+    if(order) {
+        order.status = 'Void';
+        order.voidReason = reason;
+        
+        // Return Stock
+        for(let item of order.items) {
+            await Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } });
+        }
+        await order.save();
+    }
+    res.sendStatus(200);
+});
+
+module.exports = router;

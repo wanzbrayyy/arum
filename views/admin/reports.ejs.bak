@@ -1,0 +1,137 @@
+<%- include('../partials/header') %>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<div class="container" style="display:block;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2><i class="fas fa-chart-line"></i> Advanced Analytics & Reports</h2>
+        <button onclick="window.print()" class="btn" style="width:auto;"><i class="fas fa-print"></i> PDF/Print</button>
+    </div>
+
+    <!-- P&L CARD -->
+    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:20px; margin-bottom:30px;">
+        <div class="stat-box" style="background:#27ae60; color:white; padding:20px; border-radius:10px;">
+            <h3>Revenue (Omzet)</h3>
+            <h1>Rp <%= revenue.toLocaleString() %></h1>
+        </div>
+        <div class="stat-box" style="background:#e67e22; color:white; padding:20px; border-radius:10px;">
+            <h3>COGS (Modal)</h3>
+            <h1>Rp <%= cogs.toLocaleString() %></h1>
+        </div>
+        <div class="stat-box" style="background:#c0392b; color:white; padding:20px; border-radius:10px;">
+            <h3>Expenses</h3>
+            <h1>Rp <%= totalExpense.toLocaleString() %></h1>
+        </div>
+        <div class="stat-box" style="background:#2980b9; color:white; padding:20px; border-radius:10px;">
+            <h3>Net Profit</h3>
+            <h1>Rp <%= netProfit.toLocaleString() %></h1>
+        </div>
+    </div>
+
+    <!-- GRAPHS -->
+    <div style="display:flex; gap:20px; margin-bottom:30px;">
+        <div style="flex:1; background:var(--secondary-dark); padding:20px; border-radius:10px;">
+            <h3>Busy Hours (Heatmap)</h3>
+            <canvas id="heatmapChart"></canvas>
+        </div>
+        <div style="flex:1; background:var(--secondary-dark); padding:20px; border-radius:10px;">
+            <h3>Payment Methods</h3>
+            <canvas id="paymentChart"></canvas>
+        </div>
+    </div>
+
+    <!-- EMPLOYEE & VOID -->
+    <div style="display:flex; gap:20px; margin-bottom:30px;">
+        <div style="flex:1;">
+            <h3>Employee Performance</h3>
+            <table class="order-table">
+                <thead><tr><th>Name</th><th>Sales</th><th>Trans. Count</th></tr></thead>
+                <tbody>
+                    <% empPerf.forEach(e => { %>
+                    <tr>
+                        <td><%= e.user.username %></td>
+                        <td>Rp <%= e.totalSales.toLocaleString() %></td>
+                        <td><%= e.count %></td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+        <div style="flex:1;">
+            <h3>Void / Cancel Logs (Fraud Check)</h3>
+            <table class="order-table">
+                <thead><tr><th>Time</th><th>Cashier</th><th>Reason</th><th>Total</th></tr></thead>
+                <tbody>
+                    <% voids.forEach(v => { %>
+                    <tr>
+                        <td><%= v.orderDate.toLocaleTimeString() %></td>
+                        <td><%= v.cashier ? v.cashier.username : 'Unknown' %></td>
+                        <td style="color:red;"><%= v.voidReason %></td>
+                        <td>Rp <%= v.totalAmount.toLocaleString() %></td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- PRODUCT PAIRS -->
+    <div style="background:var(--secondary-dark); padding:20px; border-radius:10px;">
+        <h3>Top Pairing Products (Sering Dibeli Bersamaan)</h3>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <% pairs.forEach(p => { %>
+                <div style="background:var(--primary-dark); padding:10px 20px; border-radius:20px; border:1px solid var(--accent-green);">
+                    <%= p._id %> <span style="background:white; color:black; padding:2px 6px; border-radius:50%; font-size:0.8em; margin-left:5px;"><%= p.count %></span>
+                </div>
+            <% }) %>
+        </div>
+    </div>
+    
+    <!-- ADD EXPENSE FORM -->
+    <div style="margin-top:40px;">
+        <h3>Input Pengeluaran Operasional</h3>
+        <form action="/admin/expenses" method="POST" style="display:flex; gap:10px;">
+            <input type="text" name="description" placeholder="Keterangan (e.g. Listrik, Gas)" required>
+            <input type="number" name="amount" placeholder="Jumlah (Rp)" required>
+            <button class="btn" type="submit" style="width:auto;">Simpan</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const heatData = JSON.parse('<%- heatmap %>');
+    const hours = Array.from({length: 24}, (_, i) => i + ':00');
+    const dataPoints = new Array(24).fill(0);
+    
+    heatData.forEach(d => {
+        dataPoints[d._id.hour] += d.count;
+    });
+
+    new Chart(document.getElementById('heatmapChart'), {
+        type: 'bar',
+        data: {
+            labels: hours,
+            datasets: [{
+                label: 'Orders per Hour',
+                data: dataPoints,
+                backgroundColor: '#e74c3c'
+            }]
+        }
+    });
+
+    new Chart(document.getElementById('paymentChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Cash', 'QRIS', 'Pending'],
+            datasets: [{
+                data: [
+                    <%= payMethods.find(p=>p._id=='Cash')?.count || 0 %>,
+                    <%= payMethods.find(p=>p._id=='QRIS')?.count || 0 %>,
+                    <%= payMethods.find(p=>p._id=='Pending')?.count || 0 %>
+                ],
+                backgroundColor: ['#27ae60', '#3498db', '#f1c40f']
+            }]
+        }
+    });
+</script>
+<%- include('../partials/footer') %>

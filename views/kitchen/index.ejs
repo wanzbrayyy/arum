@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>KDS - Warkop Arum Dalu</title>
+    <meta http-equiv="refresh" content="30">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body { background: #111; color: white; font-family: sans-serif; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .card { background: #222; border: 1px solid #444; border-radius: 8px; overflow: hidden; }
+        .header { padding: 10px; background: #333; display: flex; justify-content: space-between; font-weight: bold; }
+        .items { padding: 15px; }
+        .item { display: flex; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        .footer { padding: 10px; display: flex; gap: 5px; }
+        .btn { flex: 1; padding: 15px; border: none; cursor: pointer; color: white; font-weight: bold; }
+        .cook { background: #e67e22; }
+        .serve { background: #27ae60; }
+        .urgent { border: 2px solid red; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% {box-shadow: 0 0 0 0 rgba(255,0,0,0.7);} 70% {box-shadow: 0 0 0 10px rgba(255,0,0,0);} 100% {box-shadow: 0 0 0 0 rgba(255,0,0,0);} }
+    </style>
+</head>
+<body>
+    <h1 style="color:#f1c40f;">KITCHEN DISPLAY SYSTEM</h1>
+    <div class="grid">
+        <% orders.forEach(o => { %>
+            <div class="card <%= (new Date() - new Date(o.orderDate)) > 1200000 ? 'urgent' : '' %>">
+                <div class="header">
+                    <span>#<%= o.queueNumber %> (<%= o.tableName %>)</span>
+                    <span><%= o.orderDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) %></span>
+                </div>
+                <div class="items">
+                    <% o.items.forEach(i => { %>
+                        <div class="item">
+                            <span><%= i.quantity %>x <%= i.productName %></span>
+                            <span style="color:yellow; font-size:0.8em;"><%= i.notes || '' %></span>
+                        </div>
+                    <% }) %>
+                </div>
+                <div class="footer">
+                    <% if(!o.isCooked) { %>
+                        <button class="btn cook" onclick="updateStatus('<%= o._id %>', 'cooked')">MARK COOKED</button>
+                    <% } else { %>
+                        <button class="btn serve" onclick="updateStatus('<%= o._id %>', 'served')">MARK SERVED</button>
+                    <% } %>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+    <script>
+        async function updateStatus(id, type) {
+            await fetch(`/kitchen/${type}/${id}`, { method: 'POST' });
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>

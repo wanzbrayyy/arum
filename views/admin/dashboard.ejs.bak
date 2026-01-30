@@ -1,0 +1,112 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+    <div class="sidebar no-print">
+        <div class="logo">
+            <div class="logo-title">WARKOP ARUM DALU</div>
+            <div class="logo-subtitle">ADMIN PANEL</div>
+        </div>
+        <nav class="sidebar-menu">
+            <ul>
+                <li><a href="/admin/dashboard" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="/admin/products"><i class="fas fa-boxes"></i> Products</a></li>
+                <li><a href="/admin/categories"><i class="fas fa-tags"></i> Categories</a></li>
+                <li><a href="/admin/employees"><i class="fas fa-users"></i> Employees</a></li>
+                <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="dashboard-header">
+            <h2>Dashboard & Recap</h2>
+            <div class="user-info">
+                <span>Welcome, <%= user.username %></span>
+                <i class="fas fa-user-circle"></i>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="no-print" style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <a href="/admin/export/csv" class="btn" style="width: auto; background-color: #27ae60; text-decoration: none; display: inline-flex; align-items: center;">
+                <i class="fas fa-file-csv" style="margin-right: 8px;"></i> Export to Excel/CSV
+            </a>
+            <button onclick="window.print()" class="btn" style="width: auto; background-color: #34495e; display: inline-flex; align-items: center;">
+                <i class="fas fa-print" style="margin-right: 8px;"></i> Save as PDF / Print
+            </button>
+        </div>
+
+        <div class="stats-container" style="display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap;">
+            <div class="stat-box" style="flex: 1; background: #27ae60; padding: 20px; border-radius: 10px; color: white; min-width: 200px;">
+                <h3 style="margin: 0; font-size: 0.9em;">Total Revenue</h3>
+                <p style="font-size: 1.8em; margin: 10px 0; font-weight: bold;">Rp <%= totalRevenue.toLocaleString() %></p>
+            </div>
+            <div class="stat-box" style="flex: 1; background: #2980b9; padding: 20px; border-radius: 10px; color: white; min-width: 200px;">
+                <h3 style="margin: 0; font-size: 0.9em;">Total Orders</h3>
+                <p style="font-size: 1.8em; margin: 10px 0; font-weight: bold;"><%= totalOrders %></p>
+            </div>
+            <div class="stat-box" style="flex: 1; background: #e67e22; padding: 20px; border-radius: 10px; color: white; min-width: 200px;">
+                <h3 style="margin: 0; font-size: 0.9em;">Total Products</h3>
+                <p style="font-size: 1.8em; margin: 10px 0; font-weight: bold;"><%= products.length %></p>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px;">
+                <h3>Top 5 Best Sellers</h3>
+                <table class="order-table">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Category</th>
+                            <th>Total Sold</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% topProducts.forEach(product => { %>
+                            <tr>
+                                <td><%= product.name %></td>
+                                <td><%= product.category %></td>
+                                <td style="font-weight: bold;"><%= product.totalSold %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="flex: 1; min-width: 300px;">
+                <h3>Low Stock Alert (Live)</h3>
+                <table class="order-table">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Remaining Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% 
+                        // Urutkan berdasarkan stok terkecil
+                        const sortedProducts = products.sort((a,b) => a.stock - b.stock);
+                        // Ambil produk yang stoknya di bawah 10 atau 5 terendah
+                        const lowStockProducts = sortedProducts.filter(p => p.stock < 10);
+                        const displayProducts = lowStockProducts.length > 0 ? lowStockProducts : sortedProducts.slice(0, 5);
+                        
+                        displayProducts.forEach(product => { 
+                        %>
+                            <tr>
+                                <td><%= product.name %></td>
+                                <td style="<%= product.stock < 5 ? 'color: #e74c3c; font-weight: bold;' : 'color: #f39c12; font-weight: bold;' %>">
+                                    <%= product.stock %> <%= product.stock === 0 ? '(Habis)' : '' %>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

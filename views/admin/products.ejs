@@ -1,0 +1,84 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-title">WARKOP ARUM DALU</div>
+            <div class="logo-subtitle">ADMIN PANEL</div>
+        </div>
+        <nav class="sidebar-menu">
+            <ul>
+                <li><a href="/admin/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="/admin/products" class="active"><i class="fas fa-boxes"></i> Products</a></li>
+                <li><a href="/admin/categories"><i class="fas fa-tags"></i> Categories</a></li>
+                <li><a href="/admin/employees"><i class="fas fa-users"></i> Employees</a></li>
+                <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="dashboard-header">
+            <h2>Product Management</h2>
+            <div class="user-info">
+                <span>Welcome, <%= user.username %> (<%= user.role %>)</span>
+                <i class="fas fa-user-circle"></i>
+            </div>
+        </div>
+
+        <div class="add-product-form">
+            <h3>Add New Product</h3>
+            <form action="/admin/products" method="POST" id="addProductForm">
+                <div class="form-group">
+                    <input type="text" id="product-name" name="name" placeholder="Product Name" required>
+                </div>
+                <div class="form-group">
+                    <input type="number" id="product-price" name="price" placeholder="Price" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <input type="number" id="product-stock" name="stock" placeholder="Stock Quantity" min="0" required>
+                </div>
+                <div class="form-group">
+                    <select id="product-category" name="category" required>
+                        <option value="">Select Category</option>
+                        <option value="Perkopian">Perkopian</option>
+                        <option value="Makanan">Makanan</option>
+                        <option value="Minuman Non-Kopi">Minuman Non-Kopi</option>
+                        <!-- Add more categories as needed -->
+                    </select>
+                </div>
+                <button type="submit" class="btn">Save Product</button>
+            </form>
+        </div>
+
+        <h3 style="margin-top: 40px;">Existing Products</h3>
+        <table class="order-table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Price</th>
+                    <th>Stock</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% products.forEach(product => { %>
+                    <tr>
+                        <td><%= product.name %></td>
+                        <td><%= product.category %></td>
+                        <td>Rp <%= product.price.toLocaleString() %></td>
+                        <td><%= product.stock %></td>
+                        <td>
+                            <button class="btn" style="background-color: #3498db; width: auto; padding: 8px 15px; margin-right: 5px;">Edit</button>
+                            <button class="btn delete-product-btn" style="background-color: #e74c3c; width: auto; padding: 8px 15px;" data-id="<%= product._id %>">Delete</button>
+                        </td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

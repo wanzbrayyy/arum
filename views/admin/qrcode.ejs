@@ -1,0 +1,122 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+    <div class="sidebar no-print">
+        <div class="logo">
+            <div class="logo-title">WARKOP ARUM DALU</div>
+            <div class="logo-subtitle">ADMIN PANEL</div>
+        </div>
+        <nav class="sidebar-menu">
+            <ul>
+                <li><a href="/admin/reports"><i class="fas fa-chart-line"></i> Analytics</a></li>
+                <li><a href="/admin/tables"><i class="fas fa-chair"></i> Tables & Map</a></li>
+                <li><a href="/admin/products"><i class="fas fa-boxes"></i> Products</a></li>
+                <li><a href="/admin/categories"><i class="fas fa-tags"></i> Categories</a></li>
+                <li><a href="/admin/employees"><i class="fas fa-users"></i> Employees</a></li>
+                <li><a href="/admin/qr" class="active"><i class="fas fa-qrcode"></i> QR Menu</a></li>
+                <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="dashboard-header">
+            <h2>Generate & Print QR Code per Meja</h2>
+        </div>
+
+        <div class="no-print" style="margin-bottom: 30px;">
+            <p>Pilih meja dari daftar untuk menampilkan QR Code yang sesuai.</p>
+            <div class="form-group" style="max-width: 400px;">
+                <select id="tableSelector" class="form-control" style="width:100%; padding:10px; font-size:1.1em;">
+                    <option value="">-- Pilih Meja --</option>
+                    <% if(tables && tables.length > 0) { %>
+                        <% tables.forEach(table => { %>
+                            <option value="<%= table._id %>" data-name="<%= table.name %>"><%= table.name %></option>
+                        <% }) %>
+                    <% } %>
+                </select>
+            </div>
+        </div>
+
+        <div id="qrPrintArea" style="display: none;">
+            <div class="qr-card">
+                <div id="qrcode-display"></div>
+                <h3 id="tableNameDisplay" style="color: #2c3e50; margin-top: 15px; margin-bottom: 0;"></h3>
+                <p style="color: #555; font-size: 0.9em;">Scan untuk memesan</p>
+            </div>
+            <button onclick="window.print()" class="btn no-print" style="width: 100%; max-width: 250px; margin-top: 20px;">
+                <i class="fas fa-print"></i> Cetak QR Code Ini
+            </button>
+        </div>
+
+        <div id="placeholder" style="text-align:center; color: #7f8c8d;">
+            <i class="fas fa-qrcode" style="font-size: 5em; margin-bottom: 15px;"></i>
+            <p>QR Code akan muncul di sini setelah Anda memilih meja.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .qr-card {
+        background: white;
+        padding: 30px;
+        border-radius: 15px;
+        text-align: center;
+        max-width: 250px;
+        margin: 0 auto;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    #qrcode-display {
+        display: flex;
+        justify-content: center;
+    }
+    @media print {
+        .qr-card {
+            box-shadow: none;
+            border: 2px solid #000;
+        }
+    }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const selector = document.getElementById('tableSelector');
+        const printArea = document.getElementById('qrPrintArea');
+        const placeholder = document.getElementById('placeholder');
+        const qrDisplay = document.getElementById('qrcode-display');
+        const tableNameDisplay = document.getElementById('tableNameDisplay');
+        const baseUrl = "<%= baseUrl %>";
+
+        selector.addEventListener('change', (event) => {
+            const selectedOption = event.target.options[event.target.selectedIndex];
+            const tableId = selectedOption.value;
+            const tableName = selectedOption.dataset.name;
+
+            qrDisplay.innerHTML = '';
+
+            if (tableId) {
+                placeholder.style.display = 'none';
+                printArea.style.display = 'block';
+
+                const url = `${baseUrl}/client?tableId=${tableId}`;
+                tableNameDisplay.textContent = tableName;
+
+                new QRCode(qrDisplay, {
+                    text: url,
+                    width: 200,
+                    height: 200,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            } else {
+                printArea.style.display = 'none';
+                placeholder.style.display = 'block';
+            }
+        });
+    });
+</script>
+
+<%- include('../partials/footer') %>

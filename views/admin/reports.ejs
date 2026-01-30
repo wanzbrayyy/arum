@@ -1,0 +1,216 @@
+<%- include('../partials/header') %>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="container">
+    <!-- SIDEBAR NAVIGATION -->
+    <div class="sidebar no-print">
+        <div class="logo">
+            <div class="logo-title">WARKOP ARUM DALU</div>
+            <div class="logo-subtitle">ADMIN PANEL</div>
+        </div>
+        <nav class="sidebar-menu">
+            <ul>
+                <li><a href="/admin/reports" class="active"><i class="fas fa-chart-line"></i> Analytics</a></li>
+                <li><a href="/admin/tables"><i class="fas fa-chair"></i> Tables & Map</a></li>
+                <li><a href="/admin/products"><i class="fas fa-boxes"></i> Products</a></li>
+                <li><a href="/admin/categories"><i class="fas fa-tags"></i> Categories</a></li>
+                <li><a href="/admin/employees"><i class="fas fa-users"></i> Employees</a></li>
+                <li><a href="/admin/qr"><i class="fas fa-qrcode"></i> QR Menu</a></li>
+                <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main-content">
+        <div class="dashboard-header">
+            <h2>Business Intelligence</h2>
+            <div class="user-info">
+                <span>Welcome, <%= user.username %></span>
+                <i class="fas fa-user-circle"></i>
+            </div>
+        </div>
+
+        <div class="no-print" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="/admin/export/csv" class="btn" style="width: auto; background-color: #27ae60; text-decoration: none; display: inline-flex; align-items: center;">
+                <i class="fas fa-file-csv" style="margin-right: 8px;"></i> Export Data
+            </a>
+            <button onclick="window.print()" class="btn" style="width: auto; background-color: #34495e; display: inline-flex; align-items: center;">
+                <i class="fas fa-print" style="margin-right: 8px;"></i> Print Report
+            </button>
+        </div>
+
+        <!-- STATS CARDS -->
+        <div class="stats-grid">
+            <div class="stat-box" style="background:#27ae60;">
+                <h3>Revenue (Omzet)</h3>
+                <p>Rp <%= revenue.toLocaleString() %></p>
+            </div>
+            <div class="stat-box" style="background:#e67e22;">
+                <h3>COGS (Modal Produk)</h3>
+                <p>Rp <%= cogs.toLocaleString() %></p>
+            </div>
+            <div class="stat-box" style="background:#c0392b;">
+                <h3>Expenses (Ops)</h3>
+                <p>Rp <%= totalExpense.toLocaleString() %></p>
+            </div>
+            <div class="stat-box" style="background:#2980b9;">
+                <h3>Net Profit</h3>
+                <p>Rp <%= netProfit.toLocaleString() %></p>
+            </div>
+        </div>
+
+        <!-- CHARTS -->
+        <div class="chart-grid">
+            <div class="chart-container">
+                <h3>Peak Hours (Heatmap)</h3>
+                <canvas id="heatmapChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h3>Payment Methods</h3>
+                <canvas id="paymentChart"></canvas>
+            </div>
+        </div>
+
+        <!-- STOCK & PERFORMANCE -->
+        <div class="table-grid">
+            <div class="table-container">
+                <h3>Today's Stock Movement</h3>
+                <table class="order-table">
+                    <thead><tr><th>Product</th><th>Sold</th><th>Stock Left</th></tr></thead>
+                    <tbody>
+                        <% if(typeof dailyStock !== 'undefined' && dailyStock.length > 0) { %>
+                            <% dailyStock.forEach(item => { %>
+                            <tr>
+                                <td><%= item.productInfo.name %></td>
+                                <td style="text-align:center;"><%= item.totalSold %></td>
+                                <td style="text-align:center; color:<%= item.productInfo.stock < 10 ? 'red' : 'inherit' %>;">
+                                    <%= item.productInfo.stock %>
+                                </td>
+                            </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="3" style="text-align:center;">No sales today yet.</td></tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-container">
+                <h3>Employee Performance</h3>
+                <table class="order-table">
+                    <thead><tr><th>Name</th><th>Sales</th><th>Tx</th></tr></thead>
+                    <tbody>
+                        <% empPerf.forEach(e => { %>
+                        <tr>
+                            <td><%= e.user.username %></td>
+                            <td>Rp <%= e.totalSales.toLocaleString() %></td>
+                            <td style="text-align:center;"><%= e.count %></td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- FRAUD & PAIRS -->
+        <div class="table-grid">
+            <div class="table-container">
+                <h3>Void/Cancel Logs (Fraud Check)</h3>
+                <table class="order-table">
+                    <thead><tr><th>Cashier</th><th>Reason</th><th>Value</th></tr></thead>
+                    <tbody>
+                        <% voids.forEach(v => { %>
+                        <tr>
+                            <td><%= v.cashier ? v.cashier.username : 'N/A' %></td>
+                            <td style="color:#e74c3c;"><%= v.voidReason %></td>
+                            <td>Rp <%= v.totalAmount.toLocaleString() %></td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            <div class="table-container">
+                <h3>Top Product Pairs</h3>
+                <div class="pair-container">
+                    <% pairs.forEach(p => { %>
+                        <div class="pair-item">
+                            <%= p._id %> <span><%= p.count %>x</span>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+        </div>
+
+        <!-- EXPENSE FORM -->
+        <div class="no-print" style="margin-top:40px; border-top:1px solid #444; padding-top:20px;">
+            <h3>Input Operational Expense</h3>
+            <form action="/admin/expenses" method="POST" class="expense-form">
+                <input type="text" name="description" placeholder="Description (e.g., Electricity, Ice Cube)" required>
+                <input type="number" name="amount" placeholder="Amount (Rp)" required>
+                <button class="btn" type="submit">Save</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Responsive Grid Layouts */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .chart-grid { display: grid; grid-template-columns: 1fr; md:grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
+    .table-grid { display: grid; grid-template-columns: 1fr; md:grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
+
+    /* Component Styles */
+    .stat-box { color: white; padding: 20px; border-radius: 10px; }
+    .stat-box h3 { margin: 0; font-size: 0.9em; opacity: 0.8; }
+    .stat-box p { font-size: 1.6em; margin: 10px 0 0; font-weight: bold; }
+    
+    .chart-container { background: var(--secondary-dark); padding: 15px; border-radius: 10px; position: relative; min-height: 250px; }
+    .chart-container h3 { margin-top:0; }
+    .table-container { background: var(--secondary-dark); padding: 15px; border-radius: 10px; }
+    .table-container h3 { margin-top:0; }
+    .order-table { width:100%; }
+
+    .pair-container { display:flex; flex-wrap:wrap; gap:8px; }
+    .pair-item { background: var(--primary-dark); padding: 8px 15px; border-radius: 20px; font-size: 0.9em; }
+    .pair-item span { background: var(--accent-green); color: white; border-radius: 50%; padding: 2px 6px; font-size: 0.8em; margin-left: 5px; }
+    
+    .expense-form { display: flex; gap: 10px; flex-wrap: wrap; }
+    .expense-form input { flex-grow: 1; }
+    .expense-form button { width: auto; }
+
+    /* Mobile Specific Adjustments */
+    @media (max-width: 768px) {
+        .chart-grid, .table-grid { grid-template-columns: 1fr; }
+        .stat-box p { font-size: 1.4em; }
+    }
+</style>
+
+<script>
+    const heatData = <%- heatmap %>;
+    const hours = Array.from({length: 24}, (_, i) => `${i}`);
+    const dataPoints = new Array(24).fill(0);
+    heatData.forEach(d => { if(d._id && d._id.hour >= 0) dataPoints[d._id.hour] += d.count; });
+
+    new Chart(document.getElementById('heatmapChart'), {
+        type: 'bar',
+        data: { labels: hours, datasets: [{ label: 'Orders', data: dataPoints, backgroundColor: '#e74c3c', borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    const payData = {
+        cash: <%= payMethods.find(p=>p._id=='Cash')?.count || 0 %>,
+        qris: <%= payMethods.find(p=>p._id=='QRIS')?.count || 0 %>
+    };
+
+    new Chart(document.getElementById('paymentChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Cash', 'QRIS'],
+            datasets: [{ data: [payData.cash, payData.qris], backgroundColor: ['#27ae60', '#3498db'], borderWidth: 0 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
+    });
+</script>
+
+<%- include('../partials/footer') %>

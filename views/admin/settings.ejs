@@ -1,0 +1,58 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-title">WARKOP ARUM DALU</div>
+            <div class="logo-subtitle">ADMIN PANEL</div>
+        </div>
+        <nav class="sidebar-menu">
+            <ul>
+                <li><a href="/admin/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="/admin/products"><i class="fas fa-boxes"></i> Products</a></li>
+                <li><a href="/admin/categories"><i class="fas fa-tags"></i> Categories</a></li>
+                <li><a href="/admin/employees"><i class="fas fa-users"></i> Employees</a></li>
+                <li><a href="/admin/settings" class="active"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="dashboard-header">
+            <h2>System Settings</h2>
+            <div class="user-info">
+                <span>Welcome, <%= user.username %> (<%= user.role %>)</span>
+                <i class="fas fa-user-circle"></i>
+            </div>
+        </div>
+
+        <h3>General Settings</h3>
+        <form action="/admin/settings/general" method="POST">
+            <div class="form-group">
+                <label for="shop-name" style="display: block; margin-bottom: 5px; color: var(--text-dark);">Shop Name:</label>
+                <input type="text" id="shop-name" name="shopName" value="WARKOP ARUM DALU" required>
+            </div>
+            <div class="form-group">
+                <label for="address" style="display: block; margin-bottom: 5px; color: var(--text-dark);">Address:</label>
+                <input type="text" id="address" name="address" value="Jl. Contoh No. 123, Kota Fiktif" required>
+            </div>
+            <button type="submit" class="btn">Save General Settings</button>
+        </form>
+
+        <h3 style="margin-top: 40px;">Printer Settings</h3>
+        <form action="/admin/settings/printer" method="POST">
+            <div class="form-group">
+                <label for="printer-model" style="display: block; margin-bottom: 5px; color: var(--text-dark);">Printer Model:</label>
+                <input type="text" id="printer-model" name="printerModel" value="Thermal Printer X200" required>
+            </div>
+            <div class="form-group">
+                <label for="bluetooth-address" style="display: block; margin-bottom: 5px; color: var(--text-dark);">Bluetooth Address:</label>
+                <input type="text" id="bluetooth-address" name="bluetoothAddress" value="XX:XX:XX:XX:XX:XX">
+            </div>
+            <button type="submit" class="btn">Save Printer Settings</button>
+        </form>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

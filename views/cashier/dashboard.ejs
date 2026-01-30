@@ -1,0 +1,443 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-title">WARKOP ARUM DALU</div>
+            <div class="logo-subtitle">POS SYSTEM</div>
+        </div>
+        <nav class="sidebar-menu">
+            <ul>
+                <li><a href="#" class="active" onclick="switchTab('pos')"><i class="fas fa-cash-register"></i> POS</a></li>
+                <li><a href="#" onclick="switchTab('held')"><i class="fas fa-pause-circle"></i> Pending</a></li>
+                <li><a href="#" onclick="openEndShiftModal()"><i class="fas fa-store-slash"></i> End Shift</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="dashboard-header">
+            <h2>Cashier Dashboard</h2>
+            <div class="user-info">
+                <% if(activeShift) { %>
+                    <span style="color: var(--accent-green); margin-right: 15px;">
+                        <i class="fas fa-clock"></i> Shift: <%= new Date(activeShift.startTime).toLocaleTimeString() %>
+                    </span>
+                    <span>Modal: Rp <%= activeShift.startCash.toLocaleString() %></span>
+                <% } else { %>
+                    <span style="color: #e74c3c;">SHIFT CLOSED</span>
+                <% } %>
+            </div>
+        </div>
+
+        <div id="posTab">
+            <div id="tableMapContainer" style="background:#2c3e50; height:300px; position:relative; overflow:hidden; border-radius:10px; margin-bottom:20px; border:2px solid #4a627a;">
+                <% if(tables && tables.length > 0) { %>
+                    <% tables.forEach(t => { %>
+                        <div class="table-node <%= t.status.toLowerCase() %>" 
+                             style="left:<%= t.x %>px; top:<%= t.y %>px; width:<%= t.width %>px; height:<%= t.height %>px;"
+                             onclick="selectTable('<%= t._id %>', '<%= t.name %>', '<%= t.status %>')">
+                            <span><%= t.name %></span>
+                        </div>
+                    <% }) %>
+                <% } else { %>
+                    <div style="display:flex; justify-content:center; align-items:center; height:100%; color:#bdc3c7;">
+                        Visual Table Map belum diatur di Admin Panel.
+                    </div>
+                <% } %>
+            </div>
+
+            <div class="order-panel">
+                <div class="order-list">
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <input type="text" id="custName" placeholder="Nama Pelanggan" class="form-control" style="flex:1; padding: 10px; border-radius: 5px; border: 1px solid #4a627a; background: #2c3e50; color: white;">
+                        <input type="text" id="tableDisplay" placeholder="Pilih Meja" readonly class="form-control" style="width: 120px; padding: 10px; border-radius: 5px; border: 1px solid #4a627a; background: #2c3e50; color: white; cursor: not-allowed;">
+                        <input type="hidden" id="selectedTableId">
+                    </div>
+
+                    <div style="flex-grow: 1; overflow-y: auto; max-height: 400px; border: 1px solid #4a627a; border-radius: 5px; position: relative; min-height: 200px; background: rgba(0,0,0,0.2);">
+                        <div id="emptyOrderMsg" style="padding: 50px; text-align: center; color: #95a5a6;">
+                            <i class="fas fa-shopping-basket" style="font-size: 3em; margin-bottom: 15px; display: block;"></i>
+                            <p>Keranjang Kosong.<br>Pilih produk di sebelah kanan.</p>
+                        </div>
+
+                        <table class="order-table" id="mainOrderTable" style="display: none; width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #34495e; color: white;">
+                                    <th style="padding: 10px; text-align: left;">Produk</th>
+                                    <th style="padding: 10px; width: 100px; text-align: center;">Qty</th>
+                                    <th style="padding: 10px; text-align: right;">Total</th>
+                                    <th style="padding: 10px; width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="posTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="subtotal" id="subtotal" style="margin-top: 20px; border-top: 1px solid #4a627a; padding-top: 10px; font-size: 1.5em; text-align: right; color: var(--accent-green); font-weight: bold;">
+                        SUBTOTAL: Rp 0
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn" style="background-color: #f39c12; flex: 1;" onclick="processOrder('hold')">
+                            <i class="fas fa-hand-paper"></i> Hold
+                        </button>
+                        <button class="btn" style="flex: 2; background-color: #27ae60;" onclick="processOrder('pay')">
+                            <i class="fas fa-money-bill-wave"></i> Bayar
+                        </button>
+                        <button class="btn" style="background-color: #c0392b; flex: 1; display: none;" id="btnVoid" onclick="voidOrder()">
+                            <i class="fas fa-ban"></i> Void
+                        </button>
+                    </div>
+                </div>
+
+                <div class="add-product-section">
+                    <button class="btn-add-product" id="openAddProductModal"><i class="fas fa-plus"></i></button>
+                    <p style="margin-top:10px; color:#bdc3c7;">Tambah Produk</p>
+                    <div class="category-filter" style="margin-top: 20px; width: 100%;">
+                        <button class="category-btn active" data-category="all">Semua</button>
+                        <button class="category-btn" data-category="Perkopian">Kopi</button>
+                        <button class="category-btn" data-category="Makanan">Makanan</button>
+                        <button class="category-btn" data-category="Minuman Non-Kopi">Minuman</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="heldTab" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3>Pending / Held Orders</h3>
+                <button class="btn" style="width: auto;" onclick="loadHeldOrders()"><i class="fas fa-sync"></i> Refresh</button>
+            </div>
+            <div id="heldOrdersList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px;"></div>
+        </div>
+    </div>
+</div>
+
+<% if(!activeShift) { %>
+<div id="startShiftModal" class="modal" style="display: flex; background: rgba(0,0,0,0.95); z-index: 9999;">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <h2><i class="fas fa-sun"></i> Buka Shift</h2>
+        <form action="/cashier/shift/start" method="POST">
+            <div class="form-group">
+                <input type="number" name="startCash" placeholder="Input Modal Awal (Rp)" required style="font-size: 1.5em; text-align: center;">
+            </div>
+            <button type="submit" class="btn">Buka Kasir</button>
+        </form>
+    </div>
+</div>
+<% } %>
+
+<div id="endShiftModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <span class="close-button" onclick="document.getElementById('endShiftModal').style.display='none'">&times;</span>
+        <h2><i class="fas fa-moon"></i> Tutup Shift</h2>
+        <div style="background: #222; padding: 10px; border-radius: 5px; margin-bottom: 15px; font-size: 0.9em;">
+            <div style="display:flex; justify-content:space-between;">
+                <span>Modal Awal:</span>
+                <span id="dispStartCash">Rp 0</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <span>Total Penjualan:</span>
+                <span id="dispSales">Rp 0</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; border-top:1px solid #555; margin-top:5px; padding-top:5px; color: var(--accent-green); font-weight:bold;">
+                <span>Total Sistem (Expected):</span>
+                <span id="dispExpected">Loading...</span>
+            </div>
+        </div>
+        <form action="/cashier/shift/end" method="POST">
+            <div class="form-group">
+                <label>Uang Fisik di Laci:</label>
+                <input type="number" name="actualCash" placeholder="Rp 0" required style="font-size: 1.2em; font-weight: bold;">
+            </div>
+            <button type="submit" class="btn" style="background-color: #e74c3c;">Tutup & Logout</button>
+        </form>
+    </div>
+</div>
+
+<div id="addProductModal" class="modal">
+    <div class="modal-content" style="width: 90%; max-width: 800px; height: 85vh; display: flex; flex-direction: column;">
+        <div class="modal-header" style="flex-shrink: 0; display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+            <h3 style="margin:0;">Pilih Produk</h3>
+            <span class="close-button" onclick="document.getElementById('addProductModal').style.display='none'">&times;</span>
+        </div>
+        <div class="modal-body" id="modalProductItems" style="flex-grow: 1; overflow-y: auto; margin-bottom: 15px;"></div>
+        <div class="modal-footer" style="flex-shrink: 0;">
+            <button class="btn" id="addSelectedProducts" style="width: 100%;">Tambah ke Order</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .table-node {
+        position: absolute; border-radius: 8px; display: flex; flex-direction: column;
+        justify-content: center; align-items: center; cursor: pointer; color: white;
+        font-weight: bold; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        border: 2px solid transparent; text-shadow: 1px 1px 2px black;
+    }
+    .table-node:active { transform: scale(0.95); }
+    .table-node.empty { background: #27ae60; border-color: #2ecc71; }
+    .table-node.occupied { background: #c0392b; border-color: #e74c3c; animation: pulse 2s infinite; }
+    .table-node.dirty { background: #f39c12; border-color: #f1c40f; }
+    .table-node.reserved { background: #8e44ad; border-color: #9b59b6; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.8; } 100% { opacity: 1; } }
+</style>
+
+<script>
+    let currentOrder = [];
+    let currentOrderId = null; 
+    let allProducts = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchProducts(); 
+        updateOrderUI();
+    });
+
+    window.switchTab = function(tab) {
+        document.getElementById('posTab').style.display = tab === 'pos' ? 'block' : 'none';
+        document.getElementById('heldTab').style.display = tab === 'held' ? 'block' : 'none';
+        document.querySelectorAll('.sidebar-menu a').forEach(l => l.classList.remove('active'));
+        if(tab === 'held') loadHeldOrders();
+    }
+
+    function selectTable(id, name, status) {
+        document.getElementById('selectedTableId').value = id;
+        document.getElementById('tableDisplay').value = name;
+        document.querySelectorAll('.table-node').forEach(el => el.style.border = '2px solid transparent');
+        event.currentTarget.style.border = '2px solid white';
+        
+        if(status === 'Occupied') {
+            alert('Info: Meja ini sedang terisi.');
+        }
+    }
+
+    async function fetchProducts() {
+        try {
+            const res = await fetch('/api/products');
+            allProducts = await res.json();
+        } catch (e) { console.error("Err fetching products", e); }
+    }
+
+    function updateOrderUI() {
+        const tbody = document.getElementById('posTableBody');
+        const emptyMsg = document.getElementById('emptyOrderMsg');
+        const mainTable = document.getElementById('mainOrderTable');
+        const subtotalDiv = document.getElementById('subtotal');
+        const btnVoid = document.getElementById('btnVoid');
+
+        tbody.innerHTML = '';
+        
+        if (currentOrder.length === 0) {
+            emptyMsg.style.display = 'block'; 
+            mainTable.style.display = 'none'; 
+            subtotalDiv.textContent = `SUBTOTAL: Rp 0`;
+            btnVoid.style.display = 'none';
+        } else {
+            emptyMsg.style.display = 'none'; 
+            mainTable.style.display = 'table'; 
+            
+            let total = 0;
+            currentOrder.forEach((item, index) => {
+                const lineTotal = item.price * item.quantity;
+                total += lineTotal;
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #444';
+                tr.innerHTML = `
+                    <td style="padding:10px;"><b>${item.productName}</b><br><small>@Rp ${item.price.toLocaleString()}</small></td>
+                    <td style="padding:10px; text-align:center;">
+                        <button class="btn" style="padding:0; width:25px;" onclick="updateQty(${index}, -1)">-</button>
+                        <span style="margin:0 5px;">${item.quantity}</span>
+                        <button class="btn" style="padding:0; width:25px;" onclick="updateQty(${index}, 1)">+</button>
+                    </td>
+                    <td style="padding:10px; text-align:right;">Rp ${lineTotal.toLocaleString()}</td>
+                    <td style="padding:10px;"><button class="btn" style="background:#c0392b; width:30px; padding:0;" onclick="removeItem(${index})">x</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            subtotalDiv.textContent = `SUBTOTAL: Rp ${total.toLocaleString()}`;
+            btnVoid.style.display = currentOrderId ? 'inline-block' : 'none';
+        }
+    }
+
+    document.getElementById('openAddProductModal').onclick = () => {
+        renderModalProducts();
+        document.getElementById('addProductModal').style.display = 'flex';
+    };
+
+    function renderModalProducts() {
+        const container = document.getElementById('modalProductItems');
+        container.innerHTML = '';
+        const activeCat = document.querySelector('.category-filter .category-btn.active')?.dataset.category || 'all';
+        const filtered = activeCat === 'all' ? allProducts : allProducts.filter(p => p.category === activeCat);
+        
+        filtered.forEach(p => {
+            const div = document.createElement('div');
+            div.className = 'modal-product-item';
+            div.style.padding = '10px'; div.style.borderBottom = '1px solid #444';
+            div.style.display = 'flex'; div.style.justifyContent = 'space-between';
+            div.innerHTML = `
+                <div style="flex:1;">
+                    <input type="checkbox" class="prod-checkbox" id="p-${p._id}" value="${p._id}" 
+                        data-name="${p.name}" data-price="${p.price}" ${p.stock <= 0 ? 'disabled' : ''}>
+                    <label for="p-${p._id}" style="${p.stock <= 0 ? 'color:red;' : ''}">${p.name} <br> <small>Rp ${p.price.toLocaleString()}</small></label>
+                </div>
+                <input type="number" id="qty-${p._id}" value="1" min="1" disabled style="width:50px; text-align:center; color:black;">
+            `;
+            container.appendChild(div);
+            const cb = div.querySelector(`#p-${p._id}`);
+            const qty = div.querySelector(`#qty-${p._id}`);
+            cb.onchange = () => { qty.disabled = !cb.checked; if(cb.checked) qty.focus(); };
+        });
+    }
+
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.onclick = (e) => {
+            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            renderModalProducts();
+        }
+    });
+
+    document.getElementById('addSelectedProducts').onclick = () => {
+        document.querySelectorAll('.prod-checkbox:checked').forEach(cb => {
+            const id = cb.value;
+            const qty = parseInt(document.getElementById(`qty-${id}`).value) || 1;
+            const existing = currentOrder.find(i => i.productId == id);
+            if (existing) existing.quantity += qty;
+            else currentOrder.push({
+                productId: id, productName: cb.dataset.name, 
+                quantity: qty, price: parseInt(cb.dataset.price)
+            });
+        });
+        updateOrderUI();
+        document.getElementById('addProductModal').style.display = 'none';
+    };
+
+    window.updateQty = (idx, change) => {
+        if (currentOrder[idx].quantity + change <= 0) removeItem(idx);
+        else { currentOrder[idx].quantity += change; updateOrderUI(); }
+    }
+    window.removeItem = (idx) => { currentOrder.splice(idx, 1); updateOrderUI(); }
+
+    window.processOrder = async (action) => {
+        if (currentOrder.length === 0) return alert('Keranjang Kosong! Harap tambah produk.');
+        
+        const custName = document.getElementById('custName').value;
+        const tableId = document.getElementById('selectedTableId').value;
+
+        if (action === 'hold' && !custName && !tableId) return alert('Isi Nama Pelanggan / Pilih Meja');
+
+        const btn = event.target;
+        btn.disabled = true;
+        btn.innerHTML = 'Memproses...';
+
+        const payload = {
+            items: currentOrder, 
+            customerName: custName || 'Guest',
+            tableId: tableId || null, 
+            action: action, 
+            orderId: currentOrderId
+        };
+
+        try {
+            const res = await fetch('/cashier/order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            
+            const result = await res.json();
+
+            if (res.ok) {
+                if (action === 'pay') {
+                    if(confirm("Transaksi Berhasil! Cetak Struk?")) {
+                        const printData = {
+                            customerName: custName || 'Guest',
+                            tableName: document.getElementById('tableDisplay').value,
+                            items: currentOrder.map(i => ({...i})),
+                            totalAmount: currentOrder.reduce((sum, i) => sum + (i.price * i.quantity), 0),
+                            paymentMethod: 'Cash'
+                        };
+                        const bytes = window.generateReceiptBytes(printData);
+                        await window.printReceipt(bytes);
+                    }
+                } else {
+                    alert('Order Disimpan (Pending).');
+                }
+                window.location.reload();
+            } else {
+                alert('Gagal: ' + result.message);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Error Koneksi');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    window.voidOrder = async () => {
+        const reason = prompt("Alasan Void:");
+        if(!reason) return;
+        const res = await fetch('/cashier/order/void', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: currentOrderId, reason })
+        });
+        if(res.ok) window.location.reload();
+    }
+
+    window.openEndShiftModal = async () => {
+        document.getElementById('endShiftModal').style.display = 'block';
+        try {
+            const res = await fetch('/cashier/shift/stats');
+            if(res.ok) {
+                const data = await res.json();
+                document.getElementById('dispStartCash').textContent = 'Rp ' + data.startCash.toLocaleString();
+                document.getElementById('dispSales').textContent = 'Rp ' + data.totalSales.toLocaleString();
+                document.getElementById('dispExpected').textContent = 'Rp ' + data.expectedCash.toLocaleString();
+            } else {
+                document.getElementById('dispExpected').textContent = 'Error';
+            }
+        } catch(e) {
+             document.getElementById('dispExpected').textContent = 'Koneksi Error';
+        }
+    }
+    
+    window.loadHeldOrders = async () => {
+        const container = document.getElementById('heldOrdersList');
+        try {
+            const res = await fetch('/cashier/held-orders');
+            const orders = await res.json();
+            container.innerHTML = orders.map(o => `
+                <div style="background:#34495e; padding:10px; margin-bottom:10px; border-radius:5px;">
+                    <b>${o.customerName}</b> (${o.tableName})<br>
+                    Rp ${o.totalAmount.toLocaleString()}
+                    <button onclick="resumeOrder('${o._id}')" class="btn" style="margin-top:5px; padding:5px;">Lanjut</button>
+                </div>
+            `).join('');
+        } catch(e) { container.innerHTML = 'Error'; }
+    }
+
+    window.resumeOrder = async (id) => {
+        try {
+            const res = await fetch('/cashier/held-orders');
+            const orders = await res.json();
+            const order = orders.find(o => o._id === id);
+            if (order) {
+                currentOrderId = order._id;
+                document.getElementById('custName').value = order.customerName;
+                document.getElementById('tableDisplay').value = order.tableName;
+                document.getElementById('selectedTableId').value = order.tableId || '';
+                currentOrder = order.items.map(i => ({
+                    productId: i.product, productName: i.productName, quantity: i.quantity, price: i.priceAtOrder
+                }));
+                updateOrderUI();
+                switchTab('pos');
+            }
+        } catch(e) { console.error(e); }
+    }
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu - WARKOP ARUM DALU</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #2c3e50; --secondary: #34495e; --accent: #27ae60; --text-light: #ecf0f1; --text-dark: #bdc3c7; --bg-body: #1a252f; }
+        body { font-family: 'Montserrat', sans-serif; margin: 0; padding: 0; background-color: var(--bg-body); color: var(--text-light); padding-bottom: 80px; }
+        header { background-color: var(--primary); padding: 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: flex; justify-content: space-between; align-items: center; }
+        .brand { font-family: 'Playfair Display', serif; font-size: 1.5em; color: var(--text-light); }
+        .brand span { color: var(--accent); }
+        .search-container { padding: 15px; background: var(--secondary); }
+        .search-box { width: 100%; padding: 12px; border-radius: 25px; border: none; background: var(--primary); color: white; padding-left: 20px; box-sizing: border-box; outline: none; }
+        .categories { display: flex; overflow-x: auto; padding: 10px 15px; gap: 10px; background: var(--bg-body); -ms-overflow-style: none; scrollbar-width: none; }
+        .categories::-webkit-scrollbar { display: none; }
+        .cat-btn { background: var(--secondary); color: var(--text-dark); padding: 8px 16px; border-radius: 20px; border: 1px solid var(--primary); white-space: nowrap; cursor: pointer; transition: 0.3s; }
+        .cat-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+        .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; padding: 15px; }
+        .product-card { background: var(--secondary); border-radius: 12px; overflow: hidden; position: relative; display: flex; flex-direction: column; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .product-info { padding: 12px; flex-grow: 1; }
+        .product-name { font-weight: 600; margin-bottom: 5px; font-size: 0.95em; }
+        .product-cat { font-size: 0.7em; color: var(--text-dark); text-transform: uppercase; margin-bottom: 5px; }
+        .product-stock { font-size: 0.75em; color: var(--accent); margin-bottom: 8px; display: block; }
+        .product-price { font-weight: 700; color: white; }
+        .out-of-stock { color: #e74c3c; }
+        .btn-add { background: var(--accent); color: white; border: none; padding: 10px; width: 100%; cursor: pointer; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 5px; }
+        .btn-add:disabled { background: #555; cursor: not-allowed; }
+        .fab-cart { position: fixed; bottom: 20px; right: 20px; background: var(--accent); color: white; padding: 15px 25px; border-radius: 30px; box-shadow: 0 5px 20px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 10px; cursor: pointer; z-index: 99; transition: 0.3s; }
+        .cart-count { background: white; color: var(--accent); border-radius: 50%; padding: 2px 8px; font-size: 0.8em; font-weight: bold; }
+        .modal { display: none; position: fixed; z-index: 200; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); justify-content: center; align-items: flex-end; }
+        .modal-content { background: var(--secondary); width: 100%; max-width: 500px; border-radius: 20px 20px 0 0; padding: 25px; box-sizing: border-box; animation: slideUp 0.3s ease; max-height: 90vh; overflow-y: auto; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .modal-title { font-size: 1.2em; font-weight: bold; font-family: 'Playfair Display'; }
+        .close-modal { background: none; border: none; color: var(--text-dark); font-size: 1.5em; cursor: pointer; }
+        .option-group { margin-bottom: 15px; }
+        .option-select { width: 100%; padding: 10px; background: var(--primary); border: 1px solid #444; color: white; border-radius: 8px; }
+        .cart-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #444; }
+        .cart-qty-ctrl { display: flex; align-items: center; gap: 10px; background: var(--primary); padding: 5px 10px; border-radius: 15px; }
+        .btn-qty { background: none; border: none; color: white; cursor: pointer; }
+        .payment-method { display: flex; gap: 10px; margin-top: 20px; }
+        .pay-opt { flex: 1; padding: 15px; background: var(--primary); border: 2px solid transparent; border-radius: 10px; text-align: center; cursor: pointer; }
+        .pay-opt.selected { border-color: var(--accent); }
+        .btn-checkout { width: 100%; padding: 15px; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 1.1em; font-weight: bold; margin-top: 20px; cursor: pointer; }
+        .btn-secondary { width: 100%; padding: 15px; background: var(--primary); color: var(--text-dark); border: 1px solid #444; border-radius: 12px; font-size: 1em; margin-top: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="brand">WARKOP <span>ARUM DALU</span></div>
+        <div style="font-size:1.1em; font-weight:bold; color:var(--accent);">MEJA: <%= tableName %></div>
+    </header>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-box" placeholder="Cari kopi, makanan...">
+    </div>
+
+    <div class="categories">
+        <button class="cat-btn active" data-cat="all">Semua</button>
+        <button class="cat-btn" data-cat="Perkopian">Perkopian</button>
+        <button class="cat-btn" data-cat="Makanan">Makanan</button>
+        <button class="cat-btn" data-cat="Minuman Non-Kopi">Minuman</button>
+    </div>
+
+    <div class="product-grid" id="productGrid">
+        <% products.forEach(product => { %>
+            <div class="product-card" data-cat="<%= product.category %>" data-name="<%= product.name.toLowerCase() %>">
+                <div class="product-info">
+                    <div class="product-cat"><%= product.category %></div>
+                    <div class="product-name"><%= product.name %></div>
+                    <% if(product.stock > 0) { %>
+                        <span class="product-stock">Stok: <%= product.stock %></span>
+                        <div class="product-price">Rp <%= product.price.toLocaleString() %></div>
+                    <% } else { %>
+                        <span class="product-stock out-of-stock">Habis</span>
+                    <% } %>
+                </div>
+                <button class="btn-add" 
+                    onclick="openOptionModal('<%= product._id %>', '<%= product.name %>', <%= product.price %>, <%= product.stock %>)"
+                    <%= product.stock <= 0 ? 'disabled' : '' %>>
+                    <i class="fas fa-plus"></i> Tambah
+                </button>
+            </div>
+        <% }) %>
+    </div>
+
+    <div class="fab-cart" id="fabCart" style="display: none;" onclick="openCartModal()">
+        <i class="fas fa-shopping-basket"></i>
+        <span id="cartTotal">Rp 0</span>
+        <span class="cart-count" id="cartCount">0</span>
+    </div>
+
+    <div id="optionModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="optProductName">Product</div>
+                <button class="close-modal" onclick="closeModal('optionModal')">&times;</button>
+            </div>
+            <div class="option-group">
+                <label class="option-label">Catatan</label>
+                <textarea id="optNotes" class="option-select" rows="2" placeholder="Contoh: jangan pedas, es sedikit..."></textarea>
+            </div>
+            <div class="option-group">
+                <label class="option-label">Jumlah</label>
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <button class="btn-qty" onclick="adjOptQty(-1)">-</button>
+                    <span id="optQtyDisplay" style="font-weight:bold; font-size:1.2em;">1</span>
+                    <button class="btn-qty" onclick="adjOptQty(1)">+</button>
+                </div>
+            </div>
+            <button class="btn-checkout" onclick="addToCart()">Masukkan Keranjang</button>
+        </div>
+    </div>
+
+    <div id="cartModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Pesanan Anda</div>
+                <button class="close-modal" onclick="closeModal('cartModal')">&times;</button>
+            </div>
+            <div class="option-group">
+                <input type="text" id="customerName" class="search-box" placeholder="Nama Anda (Wajib)">
+            </div>
+            <div class="option-group">
+                <input type="text" id="tableNumberDisplay" class="search-box" value="<%= tableName %>" readonly style="background:#1a252f; cursor:not-allowed;">
+            </div>
+            <div id="cartItemsList"></div>
+            <div class="payment-method">
+                <div class="pay-opt selected" onclick="selectPayment('Cash', this)"><i class="fas fa-money-bill-wave"></i>Cash</div>
+                <div class="pay-opt" onclick="selectPayment('QRIS', this)"><i class="fas fa-qrcode"></i>QRIS</div>
+            </div>
+            <div style="margin-top: 20px; display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2em;">
+                <span>Total</span>
+                <span id="finalTotal">Rp 0</span>
+            </div>
+            <button class="btn-checkout" onclick="submitOrder()">Pesan Sekarang</button>
+        </div>
+    </div>
+
+    <div id="successModal" class="modal" style="z-index: 300;">
+        <div class="modal-content" style="text-align: center;">
+            <i class="fas fa-check-circle" style="font-size: 4em; color: var(--accent);"></i>
+            <h2 style="margin: 15px 0 5px;">Pesanan Berhasil!</h2>
+            <p style="color: var(--text-dark);">Silakan tunggu pesanan Anda diantar.</p>
+            <button id="btnPrint" class="btn-checkout" style="background: #2980b9;">
+                <i class="fas fa-print"></i> Cetak Struk (Opsional)
+            </button>
+            <button class="btn-secondary" onclick="window.location.reload()">Tutup</button>
+        </div>
+    </div>
+
+    <script>
+        let cart = [];
+        let selectedProduct = null;
+        let optQty = 1;
+        let selectedPayment = 'Cash';
+        let lastOrderData = null;
+
+        const preSelectedTableId = "<%= tableId || '' %>";
+        const preSelectedTableName = "<%= tableName || 'Takeaway' %>";
+        
+        function filterProducts() {
+            const term = document.getElementById('searchInput').value.toLowerCase();
+            const activeCat = document.querySelector('.cat-btn.active').dataset.cat;
+            document.querySelectorAll('.product-card').forEach(card => {
+                const name = card.dataset.name;
+                const cat = card.dataset.cat;
+                card.style.display = name.includes(term) && (activeCat === 'all' || cat === activeCat) ? 'flex' : 'none';
+            });
+        }
+        document.getElementById('searchInput').addEventListener('input', filterProducts);
+        document.querySelectorAll('.cat-btn').forEach(btn => btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            filterProducts();
+        }));
+
+        function openOptionModal(id, name, price, stock) {
+            selectedProduct = { id, name, price, stock };
+            optQty = 1;
+            document.getElementById('optProductName').textContent = name;
+            document.getElementById('optQtyDisplay').textContent = optQty;
+            document.getElementById('optNotes').value = '';
+            document.getElementById('optionModal').style.display = 'flex';
+        }
+
+        function adjOptQty(c) {
+            const newQty = optQty + c;
+            if (newQty >= 1 && newQty <= selectedProduct.stock) {
+                optQty = newQty;
+                document.getElementById('optQtyDisplay').textContent = optQty;
+            }
+        }
+
+        function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+        function openCartModal() { renderCart(); document.getElementById('cartModal').style.display = 'flex'; }
+
+        function addToCart() {
+            const noteStr = document.getElementById('optNotes').value.trim();
+            const ex = cart.find(i => i.id === selectedProduct.id && i.notes === noteStr);
+            if (ex) {
+                if (ex.qty + optQty <= selectedProduct.stock) ex.qty += optQty;
+                else alert('Stok tidak mencukupi.');
+            } else {
+                cart.push({ id: selectedProduct.id, name: selectedProduct.name, price: selectedProduct.price, qty: optQty, stock: selectedProduct.stock, notes: noteStr });
+            }
+            updateCartUI();
+            closeModal('optionModal');
+        }
+
+        function updateCartUI() {
+            const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+            const count = cart.reduce((s, i) => s + i.qty, 0);
+            document.getElementById('cartTotal').textContent = 'Rp ' + total.toLocaleString();
+            document.getElementById('cartCount').textContent = count;
+            document.getElementById('fabCart').style.display = count > 0 ? 'flex' : 'none';
+        }
+
+        function renderCart() {
+            const c = document.getElementById('cartItemsList');
+            c.innerHTML = '';
+            let t = 0;
+            cart.forEach((item, index) => {
+                t += item.price * item.qty;
+                c.innerHTML += `
+                    <div class="cart-item">
+                        <div><h4>${item.name}</h4><p>${item.notes || 'Tanpa catatan'}</p></div>
+                        <div class="cart-qty-ctrl">
+                            <button class="btn-qty" onclick="changeCartQty(${index},-1)">-</button>
+                            <span>${item.qty}</span>
+                            <button class="btn-qty" onclick="changeCartQty(${index},1)">+</button>
+                        </div>
+                    </div>`;
+            });
+            document.getElementById('finalTotal').textContent = 'Rp ' + t.toLocaleString();
+        }
+
+        function changeCartQty(i, d) {
+            const item = cart[i];
+            const n = item.qty + d;
+            if (n <= 0) cart.splice(i, 1);
+            else if (n <= item.stock) item.qty = n;
+            else alert('Stok tidak mencukupi.');
+            renderCart();
+            updateCartUI();
+            if(cart.length === 0) closeModal('cartModal');
+        }
+
+        function selectPayment(m, e) {
+            selectedPayment = m;
+            document.querySelectorAll('.pay-opt').forEach(el => el.classList.remove('selected'));
+            e.classList.add('selected');
+        }
+
+        async function submitOrder() {
+            const name = document.getElementById('customerName').value;
+            if(!name) { alert('Harap isi nama Anda.'); return; }
+            
+            lastOrderData = {
+                customerName: name,
+                tableId: preSelectedTableId,
+                tableName: preSelectedTableName,
+                paymentMethod: selectedPayment,
+                items: cart.map(i => ({ productId: i.id, quantity: i.qty, notes: i.notes, productName: i.name, price: i.price })),
+                totalAmount: cart.reduce((s, i) => s + (i.price * i.qty), 0)
+            };
+
+            try {
+                const res = await fetch('/client/order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(lastOrderData)
+                });
+                
+                if(res.ok) {
+                    closeModal('cartModal');
+                    document.getElementById('successModal').style.display = 'flex';
+                } else {
+                    const d = await res.json();
+                    alert('Gagal: ' + (d.message || 'Server error.'));
+                }
+            } catch(e) { alert('Koneksi Error. Pastikan Anda terhubung ke Wi-Fi.'); }
+        }
+
+        document.getElementById('btnPrint').addEventListener('click', async () => {
+            if (!lastOrderData) return;
+            try {
+                const printData = {
+                    customerName: lastOrderData.customerName,
+                    tableName: lastOrderData.tableName,
+                    items: lastOrderData.items,
+                    totalAmount: lastOrderData.totalAmount,
+                    paymentMethod: lastOrderData.paymentMethod
+                };
+                
+                const bytes = window.generateReceiptBytes(printData);
+                await window.printReceipt(bytes);
+
+            } catch (e) {
+                alert('Gagal Print: ' + e.message);
+            }
+        });
+    </script>
+    
+    <%- include('../partials/footer') %>
+</body>
+</html>

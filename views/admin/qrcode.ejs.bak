@@ -1,0 +1,74 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+    <div class="sidebar no-print">
+        <div class="logo">
+            <div class="logo-title">WARKOP ARUM DALU</div>
+            <div class="logo-subtitle">ADMIN PANEL</div>
+        </div>
+        <nav class="sidebar-menu">
+            <ul>
+                <li><a href="/admin/reports"><i class="fas fa-chart-line"></i> Analytics</a></li>
+                <li><a href="/admin/tables"><i class="fas fa-chair"></i> Tables & Map</a></li>
+                <li><a href="/admin/products"><i class="fas fa-boxes"></i> Products</a></li>
+                <li><a href="/admin/categories"><i class="fas fa-tags"></i> Categories</a></li>
+                <li><a href="/admin/employees"><i class="fas fa-users"></i> Employees</a></li>
+                <li><a href="/admin/qr" class="active"><i class="fas fa-qrcode"></i> QR Menu</a></li>
+                <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="dashboard-header">
+            <h2>Static QR Codes for Tables</h2>
+        </div>
+        <p class="no-print">Cetak dan tempelkan setiap QR Code ini di meja yang sesuai.</p>
+        <button onclick="window.print()" class="btn no-print" style="width: auto; margin-bottom: 20px;">
+            <i class="fas fa-print"></i> Print All QR Codes
+        </button>
+
+        <div class="qr-grid">
+            <% if(tables && tables.length > 0) { %>
+                <% tables.forEach(table => { %>
+                    <div class="qr-card">
+                        <div class="qr-code-container" id="qrcode-<%= table._id %>"></div>
+                        <h3><%= table.name %></h3>
+                    </div>
+                <% }) %>
+            <% } else { %>
+                <p>Tidak ada meja ditemukan. Silakan buat meja terlebih dahulu di menu "Tables & Map".</p>
+            <% } %>
+        </div>
+    </div>
+</div>
+
+<style>
+    .qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+    .qr-card { page-break-inside: avoid; background: white; padding: 20px; border-radius: 15px; text-align: center; }
+    .qr-card h3 { color: #2c3e50; margin-top: 15px; margin-bottom: 0; }
+    .qr-code-container { display: flex; justify-content: center; }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const baseUrl = "<%= baseUrl %>";
+        <% if(tables) { %>
+            <% tables.forEach(table => { %>
+                const url = `${baseUrl}/client?tableId=<%= table._id %>`;
+                new QRCode(document.getElementById("qrcode-<%= table._id %>"), {
+                    text: url,
+                    width: 180,
+                    height: 180,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+            <% }) %>
+        <% } %>
+    });
+</script>
+
+<%- include('../partials/footer') %>

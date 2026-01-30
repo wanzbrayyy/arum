@@ -1,0 +1,182 @@
+<%- include('../partials/header') %>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="container">
+    <div class="sidebar no-print">
+        <div class="logo">
+            <div class="logo-title">WARKOP ARUM DALU</div>
+            <div class="logo-subtitle">ADMIN PANEL</div>
+        </div>
+        <nav class="sidebar-menu">
+            <ul>
+                <li><a href="/admin/dashboard" class="active"><i class="fas fa-chart-line"></i> Analytics</a></li>
+                <li><a href="/admin/tables"><i class="fas fa-chair"></i> Tables & Map</a></li>
+                <li><a href="/admin/products"><i class="fas fa-boxes"></i> Products</a></li>
+                <li><a href="/admin/categories"><i class="fas fa-tags"></i> Categories</a></li>
+                <li><a href="/admin/employees"><i class="fas fa-users"></i> Employees</a></li>
+                <li><a href="/admin/qr"><i class="fas fa-qrcode"></i> QR Menu</a></li>
+                <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="dashboard-header">
+            <h2>Business Intelligence & Reports</h2>
+            <div class="user-info">
+                <span>Welcome, <%= user.username %></span>
+                <i class="fas fa-user-circle"></i>
+            </div>
+        </div>
+
+        <div class="no-print" style="margin-bottom: 20px; display: flex; gap: 10px;">
+            <a href="/admin/export/csv" class="btn" style="width: auto; background-color: #27ae60; text-decoration: none; display: inline-flex; align-items: center;">
+                <i class="fas fa-file-csv" style="margin-right: 8px;"></i> Export Data
+            </a>
+            <button onclick="window.print()" class="btn" style="width: auto; background-color: #34495e; display: inline-flex; align-items: center;">
+                <i class="fas fa-print" style="margin-right: 8px;"></i> Print Report
+            </button>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:20px; margin-bottom:30px;">
+            <div class="stat-box" style="background:#27ae60; color:white; padding:20px; border-radius:10px;">
+                <h3 style="margin:0; font-size:0.9em;">Revenue (Omzet)</h3>
+                <p style="font-size:1.6em; margin:10px 0; font-weight:bold;">Rp <%= revenue.toLocaleString() %></p>
+            </div>
+            <div class="stat-box" style="background:#e67e22; color:white; padding:20px; border-radius:10px;">
+                <h3 style="margin:0; font-size:0.9em;">COGS (Modal)</h3>
+                <p style="font-size:1.6em; margin:10px 0; font-weight:bold;">Rp <%= cogs.toLocaleString() %></p>
+            </div>
+            <div class="stat-box" style="background:#c0392b; color:white; padding:20px; border-radius:10px;">
+                <h3 style="margin:0; font-size:0.9em;">Expenses (Ops)</h3>
+                <p style="font-size:1.6em; margin:10px 0; font-weight:bold;">Rp <%= totalExpense.toLocaleString() %></p>
+            </div>
+            <div class="stat-box" style="background:#2980b9; color:white; padding:20px; border-radius:10px;">
+                <h3 style="margin:0; font-size:0.9em;">Net Profit</h3>
+                <p style="font-size:1.6em; margin:10px 0; font-weight:bold;">Rp <%= netProfit.toLocaleString() %></p>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:30px;">
+            <div style="flex:1; min-width:300px; background:var(--secondary-dark); padding:20px; border-radius:10px;">
+                <h3>Peak Hours (Heatmap)</h3>
+                <canvas id="heatmapChart" style="max-height:250px;"></canvas>
+            </div>
+            <div style="flex:1; min-width:300px; background:var(--secondary-dark); padding:20px; border-radius:10px;">
+                <h3>Payment Methods</h3>
+                <canvas id="paymentChart" style="max-height:250px;"></canvas>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:30px;">
+            <div style="flex:1; min-width:300px;">
+                <h3>Top Products</h3>
+                <table class="order-table">
+                    <thead><tr><th>Product</th><th>Cat</th><th>Sold</th></tr></thead>
+                    <tbody>
+                        <% if(typeof topProducts !== 'undefined') { %>
+                            <% topProducts.forEach(p => { %>
+                                <tr><td><%= p.name %></td><td><%= p.category %></td><td><%= p.totalSold %></td></tr>
+                            <% }) %>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+            <div style="flex:1; min-width:300px;">
+                <h3>Low Stock Alert</h3>
+                <table class="order-table">
+                    <thead><tr><th>Product</th><th>Stock</th></tr></thead>
+                    <tbody>
+                        <% products.sort((a,b)=>a.stock-b.stock).filter(p=>p.stock<10).slice(0,5).forEach(p => { %>
+                            <tr><td><%= p.name %></td><td style="color:red; font-weight:bold;"><%= p.stock %></td></tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom:30px;">
+            <div style="flex:1; min-width:300px;">
+                <h3>Employee Performance</h3>
+                <table class="order-table">
+                    <thead><tr><th>Name</th><th>Sales</th><th>Tx</th></tr></thead>
+                    <tbody>
+                        <% empPerf.forEach(e => { %>
+                            <tr><td><%= e.user.username %></td><td>Rp <%= e.totalSales.toLocaleString() %></td><td><%= e.count %></td></tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+            <div style="flex:1; min-width:300px;">
+                <h3>Void/Cancel Logs (Fraud)</h3>
+                <table class="order-table">
+                    <thead><tr><th>Time</th><th>Cashier</th><th>Reason</th><th>Value</th></tr></thead>
+                    <tbody>
+                        <% voids.forEach(v => { %>
+                            <tr>
+                                <td><%= v.orderDate.toLocaleTimeString() %></td>
+                                <td><%= v.cashier ? v.cashier.username : 'Unknown' %></td>
+                                <td style="color:#e74c3c;"><%= v.voidReason %></td>
+                                <td>Rp <%= v.totalAmount.toLocaleString() %></td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div style="background:var(--secondary-dark); padding:20px; border-radius:10px; margin-bottom:30px;">
+            <h3>Top Pairs (Bought Together)</h3>
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <% pairs.forEach(p => { %>
+                    <div style="background:var(--primary-dark); padding:8px 15px; border-radius:20px; border:1px solid var(--accent-green); font-size:0.9em;">
+                        <%= p._id %> <span style="background:white; color:black; padding:2px 6px; border-radius:50%; margin-left:5px;"><%= p.count %></span>
+                    </div>
+                <% }) %>
+            </div>
+        </div>
+
+        <div class="no-print" style="margin-top:40px; border-top:1px solid #444; padding-top:20px;">
+            <h3>Input Operational Expense</h3>
+            <form action="/admin/expenses" method="POST" style="display:flex; gap:10px; flex-wrap:wrap;">
+                <input type="text" name="description" placeholder="Description (e.g., Electricity, Ice Cube)" required style="flex:2;">
+                <input type="number" name="amount" placeholder="Amount (Rp)" required style="flex:1;">
+                <button class="btn" type="submit" style="width:auto; flex:0 0 100px;">Save</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const heatData = <%- heatmap %>;
+    const hours = Array.from({length: 24}, (_, i) => `${i}:00`);
+    const dataPoints = new Array(24).fill(0);
+    heatData.forEach(d => { if(d._id && d._id.hour >= 0) dataPoints[d._id.hour] += d.count; });
+
+    new Chart(document.getElementById('heatmapChart'), {
+        type: 'bar',
+        data: {
+            labels: hours,
+            datasets: [{ label: 'Orders', data: dataPoints, backgroundColor: '#e74c3c', borderRadius: 4 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+    });
+
+    const payData = {
+        cash: <%= payMethods.find(p=>p._id=='Cash')?.count || 0 %>,
+        qris: <%= payMethods.find(p=>p._id=='QRIS')?.count || 0 %>,
+        pending: <%= payMethods.find(p=>p._id=='Pending')?.count || 0 %>
+    };
+
+    new Chart(document.getElementById('paymentChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Cash', 'QRIS', 'Pending'],
+            datasets: [{ data: [payData.cash, payData.qris, payData.pending], backgroundColor: ['#27ae60', '#3498db', '#f1c40f'], borderWidth: 0 }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '70%' }
+    });
+</script>
+
+<%- include('../partials/footer') %>

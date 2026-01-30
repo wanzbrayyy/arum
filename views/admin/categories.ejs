@@ -1,0 +1,67 @@
+<%- include('../partials/header') %>
+
+<div class="container">
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-title">WARKOP ARUM DALU</div>
+            <div class="logo-subtitle">ADMIN PANEL</div>
+        </div>
+        <nav class="sidebar-menu">
+            <ul>
+                <li><a href="/admin/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                <li><a href="/admin/products"><i class="fas fa-boxes"></i> Products</a></li>
+                <li><a href="/admin/categories" class="active"><i class="fas fa-tags"></i> Categories</a></li>
+                <li><a href="/admin/employees"><i class="fas fa-users"></i> Employees</a></li>
+                <li><a href="/admin/settings"><i class="fas fa-cog"></i> Settings</a></li>
+                <li><a href="/auth/logout"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="main-content">
+        <div class="dashboard-header">
+            <h2>Category Management</h2>
+            <div class="user-info">
+                <span>Welcome, <%= user.username %> (<%= user.role %>)</span>
+                <i class="fas fa-user-circle"></i>
+            </div>
+        </div>
+
+        <h3>Add New Category</h3>
+        <form action="/admin/categories" method="POST" id="addCategoryForm">
+            <div class="form-group">
+                <input type="text" id="category-name" name="name" placeholder="Category Name" required>
+            </div>
+            <button type="submit" class="btn">Add Category</button>
+        </form>
+
+        <h3 style="margin-top: 40px;">Existing Categories</h3>
+        <table class="order-table">
+            <thead>
+                <tr>
+                    <th>Category Name</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Categories will be listed here from database -->
+                <tr>
+                    <td>Perkopian</td>
+                    <td>
+                        <button class="btn" style="background-color: #3498db; width: auto; padding: 8px 15px; margin-right: 5px;">Edit</button>
+                        <button class="btn" style="background-color: #e74c3c; width: auto; padding: 8px 15px;">Delete</button>
+                    </td>
+                </tr>
+                <tr>
+                    <td>Makanan</td>
+                    <td>
+                        <button class="btn" style="background-color: #3498db; width: auto; padding: 8px 15px; margin-right: 5px;">Edit</button>
+                        <button class="btn" style="background-color: #e74c3c; width: auto; padding: 8px 15px;">Delete</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>
